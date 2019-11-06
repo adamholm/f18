@@ -164,25 +164,29 @@ std::size_t IONAME(GetSize)(Cookie);  // SIZE=
 // end-of-record/file condition is present.
 void IONAME(GetIoMsg)(Cookie, char *, std::size_t);  // IOMSG=
 
-// One of these two functions must be called to end an I/O data
-// transfer statement, and the cookie value must not be used
-// afterwards.
-// The first returns the value for the IOSTAT= specifier, which
-// can also be used to implement ERR=, END=, and/or EOR=.
-// The first (EndIoStatementWithErr) will not terminate the image
-// when an error is present; use it for statements with ERR=, EOF=,
-// and/or EOR= specifiers.
-// The second (EndIoStatement) will terminate the image, with a message,
-// if an error has arisen.
-int IONAME(EndIoStatementWithErr)(Cookie);
-void IONAME(EndIoStatement)(
-    Cookie, const char *sourceFileName = nullptr, int lineNumber = 0);
+// The "errorHandling" argument to EndIoStatement() below conveys the
+// following flags that indicate how much error handling the
+// compiled code is able to perform.  If an error condition has arisen
+// that will not be handled, the runtime library will terminate the image
+// with a message.  Note that the runtime will never terminate the image
+// when (errorHandling & HasIostat) is true or when
+// (errorHanding == (HasErr|HasEof|HasEor)).
+enum ErrorHandlers {
+  NoErrorHandler = 0,
+  HasIostat = 1,  // IOSTAT= present
+  HasErr = 2,  // ERR= present
+  HasEof = 4,  // EOF= present
+  HasEor = 8,  // EOR= present
+};
 
-// For use after EndIoStatementWithErr() when the statement has no
-// IOSTAT= specifier and the error/end condition doesn't have the
-// appropriate ERR=, END=, or EOR= label.
-void IONAME(TerminateImage)(
-    int iostat, const char *sourceFileName = nullptr, int lineNumber = 0);
+// This function must be called to end an I/O statement, and its
+// cookie value must dead to you afterwards (although it may be
+// recycled by the library and returned to serve a later I/O call).
+// The return value can be used to implement IOSTAT=, ERR=, END=, & EOR=;
+// store it into the IOSTAT= variable if there is one, and test
+// it to implement the various branches.
+int IONAME(EndIoStatement)(Cookie, int errorHandling = NoErrorHandler,
+    const char *sourceFileName = nullptr, int lineNumber = 0);
 
 // The value of IOSTAT= is zero when no error, end-of-record,
 // or end-of-file condition has arisen; errors are positive values.
