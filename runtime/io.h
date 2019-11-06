@@ -156,7 +156,7 @@ bool IONAME(OutputComplex64)(Cookie, double, double);
 bool IONAME(OutputAscii)(Cookie, const char *, std::size_t);
 bool IONAME(InputAscii)(Cookie, char *, std::size_t);
 bool IONAME(OutputLogical)(Cookie, bool);
-bool IONAME(InputLogical)(Cookie);
+bool IONAME(InputLogical)(Cookie, bool &);
 
 std::size_t IONAME(GetSize)(Cookie);  // SIZE=
 
