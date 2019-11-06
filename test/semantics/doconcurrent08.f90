@@ -1,4 +1,4 @@
-! Copyright (c) 2019, Arm Ltd.  All rights reserved.
+! Copyright (c) 2019, NVIDIA CORPORATION.  All rights reserved.
 !
 ! Licensed under the Apache License, Version 2.0 (the "License");
 ! you may not use this file except in compliance with the License.
@@ -95,7 +95,7 @@ subroutine s3()
 
   do concurrent (i = 1:10)
     ! Deallocation of a polymorphic entity
-!ERROR: Deallocation of a polymorphic entity not allowed in a DO CONCURRENT
+!ERROR: Deallocation of a polymorphic entity not allowed in DO CONCURRENT
     deallocate(polyVar)
     ! Deallocation of a nonpolymorphic entity
     deallocate(nonPolyVar)

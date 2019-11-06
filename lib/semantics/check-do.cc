@@ -52,20 +52,6 @@ static void SayWithDo(SemanticsContext &context, parser::CharBlock stmtLocation,
   context.Say(stmtLocation, message).Attach(doLocation, GetEnclosingDoMsg());
 }
 
-static void SayWithDeclaration(SemanticsContext &context,
-    const parser::CharBlock &location, const parser::MessageFixedText &&message,
-    const parser::CharBlock &name, const Symbol &symbol) {
-  if (const auto *details{symbol.detailsIf<UseDetails>()}) {
-    context.Say(location, message, name)
-        .Attach(details->location(),
-            "It is use-associated with '%s' in module '%s'"_err_en_US,
-            details->symbol().name(), details->module().name());
-  } else {
-    context.Say(location, message, name)
-        .Attach(symbol.name(), "Declaration of '%s'"_en_US, symbol.name());
-  }
-}
-
 // 11.1.7.5 - enforce semantics constraints on a DO CONCURRENT loop body
 class DoConcurrentBodyEnforce {
 public:
@@ -86,9 +72,15 @@ public:
     return true;
   }
 
-  // C1140 -- Can't deallocate a polymorphic entity in a DO CONCURRENT
+  // C1140 -- Can't deallocate a polymorphic entity in a DO CONCURRENT.
+  // Deallocation can be caused by exiting a block that declares an allocatable
+  // entity, assignment to an allocatable variable, or an actual DEALLOCATE
+  // statement
+  //
   // Note also that the deallocation of a derived type entity might cause the
   // invocation of an IMPURE final subroutine.
+
+  // Deallocation caused by block exit
   void Post(const parser::BlockConstruct &blockConstruct) {
     const auto &endBlockStmt{
         std::get<parser::Statement<parser::EndBlockStmt>>(blockConstruct.t)};
@@ -99,10 +91,9 @@ public:
         Symbol &symbol{*pair.second};
         if (IsPolymorphic(symbol) && IsAllocatable(symbol) &&
             !symbol.attrs().test(Attr::SAVE)) {
-          SayWithDeclaration(context_, endBlockStmt.source,
+          context_.SayWithDecl(symbol, endBlockStmt.source,
               "Deallocation of a polymorphic entity caused by block"
-              " exit not allowed in DO CONCURRENT"_err_en_US,
-              parser::CharBlock{}, symbol);
+              " exit not allowed in DO CONCURRENT"_err_en_US);
         }
         // TODO: Check for deallocation of a variable with an IMPURE FINAL
         // subroutine
@@ -110,26 +101,21 @@ public:
     }
   }
 
+  // Deallocation caused by assignement
   void Post(const parser::AssignmentStmt &stmt) {
     const auto &variable{std::get<parser::Variable>(stmt.t)};
-    const auto &variableExpr{variable.typedExpr};
-    if (const SomeExpr * expr{GetExpr(variableExpr)}) {
-      const parser::Name &name{GetLastName(variable)};
-      if (const Symbol * symbol{name.symbol}) {
-        if (const std::optional<evaluate::DynamicType> &type{expr->GetType()}) {
-          if (type->IsPolymorphic()) {
-            SayWithDeclaration(context_, variable.GetSource(),
-                "Deallocation of a polymorphic entity caused by "
-                "assignment not allowed in DO CONCURRENT"_err_en_US,
-                parser::CharBlock{}, *symbol);
-          }
-        }
+    if (const Symbol * symbol{GetLastName(variable).symbol}) {
+      if (IsPolymorphic(*symbol)) {
+        context_.SayWithDecl(*symbol, variable.GetSource(),
+            "Deallocation of a polymorphic entity caused by "
+            "assignment not allowed in DO CONCURRENT"_err_en_US);
         // TODO: Check for deallocation of a variable with an IMPURE FINAL
         // subroutine
       }
     }
   }
 
+  // Deallocation from a DEALLOCATE statement
   void Post(const parser::DeallocateStmt &stmt) {
     const auto &allocateObjectList{
         std::get<std::list<parser::AllocateObject>>(stmt.t)};
@@ -138,10 +124,9 @@ public:
       if (name.symbol) {
         const Symbol &symbol{*name.symbol};
         if (IsPolymorphic(symbol)) {
-          SayWithDeclaration(context_, currentStatementSourcePosition_,
-              "Deallocation of a polymorphic entity not allowed in a DO"
-              " CONCURRENT"_err_en_US,
-              parser::CharBlock{}, symbol);
+          context_.SayWithDecl(symbol, currentStatementSourcePosition_,
+              "Deallocation of a polymorphic entity not allowed in DO"
+              " CONCURRENT"_err_en_US);
         }
         // TODO: Check for deallocation of a variable with an IMPURE FINAL
         // subroutine
@@ -276,7 +261,6 @@ private:
     return common::GetPtrFromOptional(std::get<0>(a.t));
   }
 
-  bool anyObjectIsPolymorphic() { return false; }  // FIXME placeholder
   bool fromScope(const Symbol &symbol, const std::string &moduleName) {
     if (symbol.GetUltimate().owner().IsModule() &&
         symbol.GetUltimate().owner().GetName().value().ToString() ==
@@ -380,11 +364,10 @@ public:
       if (IsVariableName(*symbol)) {
         const Scope &variableScope{symbol->owner()};
         if (DoesScopeContain(&variableScope, blockScope_)) {
-          SayWithDeclaration(context_, name.source,
-              "Variable '%s' from an enclosing scope referenced in a DO "
+          context_.SayWithDecl(*symbol, name.source,
+              "Variable '%s' from an enclosing scope referenced in DO "
               "CONCURRENT with DEFAULT(NONE) must appear in a "
-              "locality-spec"_err_en_US,
-              name.source, *symbol);
+              "locality-spec"_err_en_US);
         }
       }
     }
@@ -547,23 +530,20 @@ private:
     SymbolSet references{GatherSymbolsFromExpression(mask.thing.thing.value())};
     for (const Symbol *ref : references) {
       if (IsProcedure(*ref) && !IsPureProcedure(*ref)) {
-        SayWithDeclaration(context_, currentStatementSourcePosition_,
+        context_.SayWithDecl(*ref, currentStatementSourcePosition_,
             "Concurrent-header mask expression cannot reference an impure"
-            " procedure"_err_en_US,
-            parser::CharBlock{}, *ref);
+            " procedure"_err_en_US);
         return;
       }
     }
   }
 
   void CheckNoCollisions(const SymbolSet &refs, const SymbolSet &uses,
-      const parser::MessageFixedText &&errorMessage,
+      parser::MessageFixedText &&errorMessage,
       const parser::CharBlock &refPosition) const {
     for (const Symbol *ref : refs) {
       if (uses.find(ref) != uses.end()) {
-        const parser::CharBlock &name{ref->name()};
-        SayWithDeclaration(
-            context_, refPosition, std::move(errorMessage), name, *ref);
+        context_.SayWithDecl(*ref, refPosition, std::move(errorMessage));
         return;
       }
     }

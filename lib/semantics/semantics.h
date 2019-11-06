@@ -16,6 +16,7 @@
 #define FORTRAN_SEMANTICS_SEMANTICS_H_
 
 #include "scope.h"
+#include "symbol.h"
 #include "../evaluate/common.h"
 #include "../evaluate/intrinsics.h"
 #include "../parser/features.h"
@@ -134,6 +135,18 @@ public:
   }
   parser::Message &Say(parser::Message &&msg) {
     return messages_.Say(std::move(msg));
+  }
+  template<typename... A>
+  void SayWithDecl(const Symbol &symbol, const parser::CharBlock &at,
+      parser::MessageFixedText &&msg, A &&... args) {
+    auto &message{Say(at, msg, symbol.name(), args...)};
+    if (const auto *details{symbol.detailsIf<UseDetails>()}) {
+      message.Attach(details->location(),
+          "It is use-associated with '%s' in module '%s'"_err_en_US,
+          details->symbol().name(), details->module().name());
+    } else {
+      message.Attach(symbol.name(), "Declaration of '%s'"_en_US, symbol.name());
+    }
   }
 
   const Scope &FindScope(parser::CharBlock) const;
