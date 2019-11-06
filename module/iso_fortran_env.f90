@@ -15,6 +15,8 @@
 ! See Fortran 2018, clause 16.10.2
 ! TODO: These are placeholder values so that some tests can be run.
 
+include '../runtime/iostat.h' ! for IOSTAT= error/end code values
+
 module iso_fortran_env
 
   integer, parameter :: atomic_int_kind = 8

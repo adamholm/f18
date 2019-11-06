@@ -18,6 +18,7 @@
 #define FORTRAN_RUNTIME_IO_H_
 
 #include "entry-names.h"
+#include "iostat.h"
 #include <cinttypes>
 #include <cstddef>
 
@@ -130,9 +131,13 @@ void IONAME(SetRound)(Cookie, const char *, std::size_t);
 void IONAME(SetSign)(Cookie, const char *, std::size_t);
 
 // Data item transfer for modes other than namelist.
-// Any item can be transferred by means of a descriptor; unformatted
-// transfers to/from contiguous blocks can avoid the descriptor; and there
-// are specializations for the common scalar types.
+// Any data object that can be passed as an actual argument without the
+// use of a temporary can be transferred by means of a descriptor;
+// vector-valued subscripts and coindexing will require elementwise
+// transfers &/or data copies.  Unformatted transfers to/from contiguous
+// blocks of local image memory can avoid the descriptor, and there
+// are specializations for the most common scalar types.
+//
 // These functions return false when the I/O statement has encountered an error
 // or end-of-file/record condition.  Once the statement has encountered
 // an error, following items will be ignored; but compiled code should
@@ -175,7 +180,7 @@ enum ErrorHandlers {
   NoErrorHandler = 0,
   HasIostat = 1,  // IOSTAT= present
   HasErr = 2,  // ERR= present
-  HasEof = 4,  // EOF= present
+  HasEnd = 4,  // END= present
   HasEor = 8,  // EOR= present
 };
 
@@ -190,16 +195,19 @@ int IONAME(EndIoStatement)(Cookie, int errorHandling = NoErrorHandler,
 
 // The value of IOSTAT= is zero when no error, end-of-record,
 // or end-of-file condition has arisen; errors are positive values.
-// (See 12.11.5 in Fortran 2018 for the complete requirements; some
-// of these constants must match the values of their corresponding
-// named constants in predefined modules.)
+// (See 12.11.5 in Fortran 2018 for the complete requirements;
+// these constants must match the values of their corresponding
+// named constants in the predefined module ISO_FORTRAN_ENV, so
+// they're actually defined in another iostat.h header file that
+// can be included both here and there.)
 enum Iostat {
   // Other errors have values >1
-  IostatInquireInternalUnit = 1,
+  IostatInquireInternalUnit = FORTRAN_RUNTIME_IOSTAT_INQUIRE_INTERNAL_UNIT,
   IostatOk = 0,
-  IostatEnd = -1,  // end-of-file & no error
-  IostatEor = -2,  // end-of-record & no error or EOF
-  IostatFlush = -3,  // attempt to FLUSH an unflushable unit
+  IostatEnd = FORTRAN_RUNTIME_IOSTAT_END,  // end-of-file & no error
+  IostatEor = FORTRAN_RUNTIME_IOSTAT_EOR,  // end-of-record & no error or EOF
+  IostatFlush =
+      FORTRAN_RUNTIME_IOSTAT_FLUSH,  // attempt to FLUSH an unflushable unit
 };
 
 };  // extern "C"
