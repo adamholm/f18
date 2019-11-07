@@ -142,11 +142,11 @@ Cookie IONAME(BeginRewind)(
     ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
 
 // If an I/O statement has any IOSTAT=, ERR=, END=, or EOR= specifiers,
-// call ErrorHandling() immediately after the Begin...() call.
+// call EnableHandlers() immediately after the Begin...() call.
 // This will cause the runtime library to defer those error/end
 // conditions to the EndIoStatement() call rather than terminating
 // the image.
-void IONAME(ErrorHandling)(Cookie, bool HasIostat = false, bool HasErr = false,
+void IONAME(EnableHandlers)(Cookie, bool HasIostat = false, bool HasErr = false,
     bool HasEnd = false, bool HasEor = false);
 
 // Control list options.  These return false on a error that the
@@ -170,8 +170,8 @@ void IONAME(SetSign)(Cookie, const char *, std::size_t);
 // are specializations for the most common scalar types.
 //
 // These functions return false when the I/O statement has encountered an
-// error or end-of-file/record condition that the Begin...() call has stated
-// should be handled in compiled code.
+// error or end-of-file/record condition that the caller has indicated
+// should not cause termination of the image by the runtime library.
 // Once the statement has encountered an error, all following items will be
 // ignored and also return false; but compiled code should check for errors
 // and avoid the following items when they might crash.
@@ -199,8 +199,8 @@ std::size_t IONAME(GetSize)(Cookie);  // SIZE=
 void IONAME(GetIoMsg)(Cookie, char *, std::size_t);  // IOMSG=
 
 // This function must be called to end an I/O statement, and its
-// cookie value must dead to you afterwards (although it may be
-// recycled by the library and returned to serve a later I/O call).
+// cookie value may not be used afterwards unless it is recycled
+// by the runtime library to serve a later I/O statement.
 // The return value can be used to implement IOSTAT=, ERR=, END=, & EOR=;
 // store it into the IOSTAT= variable if there is one, and test
 // it to implement the various branches.  The error condition
