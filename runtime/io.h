@@ -45,6 +45,19 @@ extern "C" {
 //   OutputInteger64(cookie, 666);
 //   EndIOStatement(cookie);
 
+// The "errorHandling" argument to the Begin...() interfaces below
+// conveys a set of the following flags which indicate how much error
+// handling the compiled code is able to perform.  If an error or end
+// condition arises that will not be handled by the caller, the runtime
+// library will terminate the image immediately with a message.
+enum ErrorHandlers {
+  NoErrorHandler = 0,
+  HasIostat = 1,  // IOSTAT= present
+  HasErr = 2,  // ERR= present
+  HasEnd = 4,  // END= present
+  HasEor = 8,  // EOR= present
+};
+
 // Internal I/O initiation
 // Internal I/O can loan the runtime library an optional block of memory
 // in which the library can maintain state across the calls that implement
@@ -56,70 +69,106 @@ constexpr std::size_t RecommendedInternalIoScratchAreaBytes(
   return 32 + 8 * maxFormatParenthesesNestingDepth;
 }
 
-// Internal I/O to/from a default-kind character scalar can avoid a
-// descriptor.
-Cookie IONAME(BeginInternalListOutput)(char *internal, std::size_t bytes,
-    void **scratchArea = nullptr, std::size_t scratchBytes = 0);
-Cookie IONAME(BeginInternalListInput)(char *internal, std::size_t bytes,
-    void **scratchArea = nullptr, std::size_t scratchBytes = 0);
-Cookie IONAME(BeginInternalFormattedOutput)(char *internal, std::size_t bytes,
-    const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
-Cookie IONAME(BeginInternalFormattedInput)(char *internal, std::size_t bytes,
-    const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
-
 // Internal I/O to/from character arrays &/or non-default-kind character
 // requires a descriptor, which must remain unchanged until the I/O
 // statement is complete.
 Cookie IONAME(BeginInternalArrayListOutput)(const Descriptor &,
-    void **scratchArea = nullptr, std::size_t scratchBytes = 0);
+    void **scratchArea = nullptr, std::size_t scratchBytes = 0,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
 Cookie IONAME(BeginInternalArrayListInput)(const Descriptor &,
-    void **scratchArea = nullptr, std::size_t scratchBytes = 0);
+    void **scratchArea = nullptr, std::size_t scratchBytes = 0,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
 Cookie IONAME(BeginInternalArrayFormattedOutput)(const Descriptor &,
     const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 Cookie IONAME(BeginInternalArrayFormattedInput)(const Descriptor &,
     const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+
+// Internal I/O to/from a default-kind character scalar can avoid a
+// descriptor.
+Cookie IONAME(BeginInternalListOutput)(char *internal, std::size_t bytes,
+    void **scratchArea = nullptr, std::size_t scratchBytes = 0,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginInternalListInput)(char *internal, std::size_t bytes,
+    void **scratchArea = nullptr, std::size_t scratchBytes = 0,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginInternalFormattedOutput)(char *internal, std::size_t bytes,
+    const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginInternalFormattedInput)(char *internal, std::size_t bytes,
+    const char *format, std::size_t formatBytes, void **scratchArea = nullptr,
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 
 // Internal namelist I/O
 Cookie IONAME(BeginInternalNamelistOutput)(const Descriptor &,
     const NamelistGroup &, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 Cookie IONAME(BeginInternalNamelistInput)(const Descriptor &,
     const NamelistGroup &, void **scratchArea = nullptr,
-    std::size_t scratchBytes = 0);
+    std::size_t scratchBytes = 0, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 
 // External synchronous I/O initiation
-Cookie IONAME(BeginExternalListOutput)(ExternalUnit);
-Cookie IONAME(BeginExternalListInput)(ExternalUnit);
-Cookie IONAME(BeginExternalFormattedOutput)(
-    ExternalUnit, const char *format, std::size_t);
-Cookie IONAME(BeginExternalFormattedInput)(
-    ExternalUnit, const char *format, std::size_t);
-Cookie IONAME(BeginUnformattedOutput)(ExternalUnit);
-Cookie IONAME(BeginUnformattedInput)(ExternalUnit);
-Cookie IONAME(BeginNamelistOutput)(ExternalUnit, const NamelistGroup &);
-Cookie IONAME(BeginNamelistInput)(ExternalUnit, const NamelistGroup &);
+Cookie IONAME(BeginExternalListOutput)(ExternalUnit,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginExternalListInput)(ExternalUnit,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginExternalFormattedOutput)(ExternalUnit, const char *format,
+    std::size_t, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginExternalFormattedInput)(ExternalUnit, const char *format,
+    std::size_t, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginUnformattedOutput)(ExternalUnit,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginUnformattedInput)(ExternalUnit,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginNamelistOutput)(ExternalUnit, const NamelistGroup &,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginNamelistInput)(ExternalUnit, const NamelistGroup &,
+    enum ErrorHandlers = NoErrorHandler, const char *sourceFile = nullptr,
+    int sourceLine = 0);
 
 // Asynchronous I/O is supported (at most) for unformatted direct access
 // block transfers.
-AsynchronousId IONAME(BeginAsynchronousOutput)(
-    ExternalUnit, std::int64_t REC, const char *, std::size_t);
-AsynchronousId IONAME(BeginAsynchronousInput)(
-    ExternalUnit, std::int64_t REC, char *, std::size_t);
+AsynchronousId IONAME(BeginAsynchronousOutput)(ExternalUnit, std::int64_t REC,
+    const char *, std::size_t, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+AsynchronousId IONAME(BeginAsynchronousInput)(ExternalUnit, std::int64_t REC,
+    char *, std::size_t, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 Cookie IONAME(WaitForAsynchronousIo)(ExternalUnit, AsynchronousId);  // WAIT
 
 // Other I/O statements
 // TODO: OPEN & INQUIRE
-Cookie IONAME(BeginClose)(ExternalUnit);
-Cookie IONAME(BeginFlush)(ExternalUnit);
-Cookie IONAME(BeginBackspace)(ExternalUnit);
-Cookie IONAME(BeginEndfile)(ExternalUnit);
-Cookie IONAME(BeginRewind)(ExternalUnit);
+Cookie IONAME(BeginClose)(ExternalUnit, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginFlush)(ExternalUnit, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginBackspace)(ExternalUnit, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginEndfile)(ExternalUnit, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginRewind)(ExternalUnit, enum ErrorHandlers = NoErrorHandler,
+    const char *sourceFile = nullptr, int sourceLine = 0);
 
-// Control list options
+// Control list options.  These return false on a error that the
+// Begin...() call has specified will be handled by the caller.
 void IONAME(SetAdvance)(Cookie, const char *, std::size_t);
 void IONAME(SetBlank)(Cookie, const char *, std::size_t);
 void IONAME(SetDecimal)(Cookie, const char *, std::size_t);
@@ -138,14 +187,12 @@ void IONAME(SetSign)(Cookie, const char *, std::size_t);
 // blocks of local image memory can avoid the descriptor, and there
 // are specializations for the most common scalar types.
 //
-// These functions return false when the I/O statement has encountered an error
-// or end-of-file/record condition.  Once the statement has encountered
-// an error, following items will be ignored; but compiled code should
-// check for errors and avoid the following items when a READ statement
-// might have data dependences between items, as in
-//   READ(*,ERR=666) N, (A(J),J=1,N)
-// or when input/output items might raise a spurious fault, as in
-//   WRITE(*,ERR=666) X, CRASHIFCALLEDANDERRORPRESENT()
+// These functions return false when the I/O statement has encountered an
+// error or end-of-file/record condition that the Begin...() call has stated
+// should be handled in compiled code.
+// Once the statement has encountered an error, all following items will be
+// ignored and also return false; but compiled code should check for errors
+// and avoid the following items when they might crash.
 bool IONAME(OutputDescriptor)(Cookie, const Descriptor &);
 bool IONAME(InputDescriptor)(Cookie, const Descriptor &);
 bool IONAME(OutputUnformattedBlock)(Cookie, const char *, std::size_t);
@@ -169,29 +216,16 @@ std::size_t IONAME(GetSize)(Cookie);  // SIZE=
 // end-of-record/file condition is present.
 void IONAME(GetIoMsg)(Cookie, char *, std::size_t);  // IOMSG=
 
-// The "errorHandling" argument to EndIoStatement() below conveys the
-// following flags that indicate how much error handling the
-// compiled code is able to perform.  If an error condition has arisen
-// that will not be handled, the runtime library will terminate the image
-// with a message.  Note that the runtime will never terminate the image
-// when (errorHandling & HasIostat) is true or when
-// (errorHanding == (HasErr|HasEof|HasEor)).
-enum ErrorHandlers {
-  NoErrorHandler = 0,
-  HasIostat = 1,  // IOSTAT= present
-  HasErr = 2,  // ERR= present
-  HasEnd = 4,  // END= present
-  HasEor = 8,  // EOR= present
-};
-
 // This function must be called to end an I/O statement, and its
 // cookie value must dead to you afterwards (although it may be
 // recycled by the library and returned to serve a later I/O call).
 // The return value can be used to implement IOSTAT=, ERR=, END=, & EOR=;
 // store it into the IOSTAT= variable if there is one, and test
-// it to implement the various branches.
-int IONAME(EndIoStatement)(Cookie, int errorHandling = NoErrorHandler,
-    const char *sourceFileName = nullptr, int lineNumber = 0);
+// it to implement the various branches.  The error condition
+// returned is guaranteed to only be one of the problems that the
+// Begin...() call has indicated should be handled in compiled code
+// rather than by terminating the image.
+int IONAME(EndIoStatement)(Cookie);
 
 // The value of IOSTAT= is zero when no error, end-of-record,
 // or end-of-file condition has arisen; errors are positive values.
