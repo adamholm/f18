@@ -23,6 +23,10 @@ module m1
     integer :: y
   end type
 
+  type, extends(Base) :: HasPolyType
+    class(Base), allocatable :: polyField
+  end type
+
   class(Base), allocatable :: baseVar1
   type(Base) :: baseVar2
 end module m1
@@ -48,7 +52,13 @@ subroutine s1()
         ! The next one's OK because it has the "save" attribute
         class(Base), allocatable, save :: polyBlockVar1
 
+        ! This should cause errors
         class(Base), allocatable :: polyBlockVar2
+
+        ! This should also cause errors since it has a polymorphic component
+        type(HasPolyType), allocatable :: polyComponentVar
+
+!ERROR: Deallocation of a polymorphic entity caused by block exit not allowed in DO CONCURRENT
 !ERROR: Deallocation of a polymorphic entity caused by block exit not allowed in DO CONCURRENT
       end block
     end do
@@ -63,10 +73,14 @@ subroutine s2()
   class(Base), allocatable :: localVar
   class(Base), allocatable :: localVar1
   type(Base), allocatable :: localVar2
+  type(HasPolyType), allocatable :: polyComponentVar
+  type(HasPolyType), allocatable :: polyComponentVar1
 
   allocate(ChildType :: localVar)
   allocate(ChildType :: localVar1)
   allocate(Base :: localVar2)
+  allocate(polyComponentVar)
+  allocate(polyComponentVar1)
 
   do concurrent (i = 1:10)
     ! Test polymorphic entities
@@ -80,6 +94,10 @@ subroutine s2()
 
     ! The next one should be OK since localVar2 is not polymorphic
     localVar2 = localVar1
+
+    ! Error possible deallocation a variable with a polymorphic component
+!ERROR: Deallocation of a polymorphic entity caused by assignment not allowed in DO CONCURRENT
+    polyComponentVar = polyComponentVar1
   end do
 end subroutine s2
 
@@ -89,14 +107,21 @@ subroutine s3()
 
   class(Base), allocatable :: polyVar
   type(Base), allocatable :: nonPolyVar
+  type(HasPolyType), allocatable :: polyComponentVar
 
   allocate(ChildType:: polyVar)
   allocate(nonPolyVar)
+  allocate(polyComponentVar)
 
   do concurrent (i = 1:10)
     ! Deallocation of a polymorphic entity
 !ERROR: Deallocation of a polymorphic entity not allowed in DO CONCURRENT
     deallocate(polyVar)
+
+    ! Deallocation of an entity with a polymorphic component
+!ERROR: Deallocation of a polymorphic entity not allowed in DO CONCURRENT
+    deallocate(polyComponentVar)
+
     ! Deallocation of a nonpolymorphic entity
     deallocate(nonPolyVar)
   end do

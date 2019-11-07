@@ -503,9 +503,31 @@ bool IsAssumedLengthCharacterFunction(const Symbol &symbol) {
   return symbol.has<SubprogramDetails>() && IsAssumedLengthCharacter(symbol);
 }
 
-bool IsPolymorphic(const Symbol &symbol) {
-  if (const DeclTypeSpec * type{symbol.GetType()}) {
-    return type->IsPolymorphic();
+PotentialComponentIterator::const_iterator FindPolymorphicPotentialComponent(
+    const DerivedTypeSpec &derived) {
+  PotentialComponentIterator potentials{derived};
+  return std::find_if(
+      potentials.begin(), potentials.end(), [](const Symbol &component) {
+        if (const auto *details{component.detailsIf<ObjectEntityDetails>()}) {
+          const DeclTypeSpec *type{details->type()};
+          return type && type->IsPolymorphic();
+        }
+        return false;
+      });
+}
+
+bool IsOrContainsPolymorphicComponent(const Symbol &symbol) {
+  if (const Symbol * root{GetAssociationRoot(symbol)}) {
+    if (const auto *details{root->detailsIf<ObjectEntityDetails>()}) {
+      if (const DeclTypeSpec * type{details->type()}) {
+        if (type->IsPolymorphic()) {
+          return true;
+        }
+        if (const DerivedTypeSpec * derived{type->AsDerived()}) {
+          return (bool)FindPolymorphicPotentialComponent(*derived);
+        }
+      }
+    }
   }
   return false;
 }

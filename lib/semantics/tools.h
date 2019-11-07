@@ -130,7 +130,7 @@ inline bool IsAssumedSizeArray(const Symbol &symbol) {
 }
 bool IsAssumedLengthCharacter(const Symbol &);
 bool IsAssumedLengthCharacterFunction(const Symbol &);
-bool IsPolymorphic(const Symbol &);
+bool IsOrContainsPolymorphicComponent(const Symbol &);
 // Is the symbol modifiable in this scope
 std::optional<parser::MessageFixedText> WhyNotModifiable(
     const Symbol &, const Scope &);

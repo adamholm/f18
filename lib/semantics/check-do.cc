@@ -89,7 +89,7 @@ public:
     if (DoesScopeContain(&doScope, blockScope)) {
       for (auto &pair : blockScope) {
         Symbol &symbol{*pair.second};
-        if (IsPolymorphic(symbol) && IsAllocatable(symbol) &&
+        if (IsOrContainsPolymorphicComponent(symbol) && IsAllocatable(symbol) &&
             !symbol.attrs().test(Attr::SAVE)) {
           context_.SayWithDecl(symbol, endBlockStmt.source,
               "Deallocation of a polymorphic entity caused by block"
@@ -105,7 +105,7 @@ public:
   void Post(const parser::AssignmentStmt &stmt) {
     const auto &variable{std::get<parser::Variable>(stmt.t)};
     if (const Symbol * symbol{GetLastName(variable).symbol}) {
-      if (IsPolymorphic(*symbol)) {
+      if (IsOrContainsPolymorphicComponent(*symbol)) {
         context_.SayWithDecl(*symbol, variable.GetSource(),
             "Deallocation of a polymorphic entity caused by "
             "assignment not allowed in DO CONCURRENT"_err_en_US);
@@ -123,7 +123,7 @@ public:
       const parser::Name &name{GetLastName(allocateObject)};
       if (name.symbol) {
         const Symbol &symbol{*name.symbol};
-        if (IsPolymorphic(symbol)) {
+        if (IsOrContainsPolymorphicComponent(symbol)) {
           context_.SayWithDecl(symbol, currentStatementSourcePosition_,
               "Deallocation of a polymorphic entity not allowed in DO"
               " CONCURRENT"_err_en_US);
