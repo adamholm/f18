@@ -102,22 +102,26 @@ Cookie IONAME(BeginInternalNamelistInput)(const Descriptor &,
     int sourceLine = 0);
 
 // External synchronous I/O initiation
-Cookie IONAME(BeginExternalListOutput)(
-    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginExternalListInput)(
-    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginExternalFormattedOutput)(ExternalUnit, const char *format,
-    std::size_t, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginExternalFormattedInput)(ExternalUnit, const char *format,
-    std::size_t, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginUnformattedOutput)(
-    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginUnformattedInput)(
-    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginNamelistOutput)(ExternalUnit, const NamelistGroup &,
+Cookie IONAME(BeginExternalListOutput)(ExternalUnit = DefaultUnit,
     const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(BeginNamelistInput)(ExternalUnit, const NamelistGroup &,
+Cookie IONAME(BeginExternalListInput)(ExternalUnit = DefaultUnit,
     const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginExternalFormattedOutput)(const char *format, std::size_t,
+    ExternalUnit = DefaultUnit, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginExternalFormattedInput)(const char *format, std::size_t,
+    ExternalUnit = DefaultUnit, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginUnformattedOutput)(ExternalUnit = DefaultUnit,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginUnformattedInput)(ExternalUnit = DefaultUnit,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginNamelistOutput)(const NamelistGroup &,
+    ExternalUnit = DefaultUnit, const char *sourceFile = nullptr,
+    int sourceLine = 0);
+Cookie IONAME(BeginNamelistInput)(const NamelistGroup &,
+    ExternalUnit = DefaultUnit, const char *sourceFile = nullptr,
+    int sourceLine = 0);
 
 // Asynchronous I/O is supported (at most) for unformatted direct access
 // block transfers.
