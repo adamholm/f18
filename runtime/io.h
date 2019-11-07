@@ -18,7 +18,7 @@
 #define FORTRAN_RUNTIME_IO_H_
 
 #include "entry-names.h"
-#include "iostat.h"
+#include "stat.h"
 #include <cinttypes>
 #include <cstddef>
 

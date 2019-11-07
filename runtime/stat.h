@@ -14,13 +14,20 @@ See the License for the specific language governing permissions and
 limitations under the License.
 
 This file defines the error/end code values that can be returned
-to an IOSTAT= specifier on a Fortran I/O statement.
-See Fortran 2018 12.11.5.
+to an IOSTAT= or STAT= specifier on a Fortran I/O statement or
+coindexed data reference.
+See Fortran 2018 12.11.5, 16.10.2, and 16.10.2.33.
 #endif
-#ifndef FORTRAN_RUNTIME_IOSTAT_H_
-#define FORTRAN_RUNTIME_IOSTAT_H_
-#define FORTRAN_RUNTIME_IOSTAT_INQUIRE_INTERNAL_UNIT 1
+#ifndef FORTRAN_RUNTIME_STAT_H_
+#define FORTRAN_RUNTIME_STAT_H_
 #define FORTRAN_RUNTIME_IOSTAT_END (-1)
 #define FORTRAN_RUNTIME_IOSTAT_EOR (-2)
 #define FORTRAN_RUNTIME_IOSTAT_FLUSH (-3)
+#define FORTRAN_RUNTIME_IOSTAT_INQUIRE_INTERNAL_UNIT 1
+#define FORTRAN_RUNTIME_STAT_FAILED_IMAGE 10
+#define FORTRAN_RUNTIME_STAT_LOCKED 11
+#define FORTRAN_RUNTIME_STAT_LOCKED_OTHER_IMAGE 12
+#define FORTRAN_RUNTIME_STAT_STOPPED_IMAGE 13
+#define FORTRAN_RUNTIME_STAT_UNLOCKED 14
+#define FORTRAN_RUNTIME_STAT_UNLOCKED_FAILED_IMAGE 15
 #endif
