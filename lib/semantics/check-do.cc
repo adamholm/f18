@@ -367,7 +367,8 @@ public:
           context_.SayWithDecl(*symbol, name.source,
               "Variable '%s' from an enclosing scope referenced in DO "
               "CONCURRENT with DEFAULT(NONE) must appear in a "
-              "locality-spec"_err_en_US);
+              "locality-spec"_err_en_US,
+              symbol->name());
         }
       }
     }
@@ -543,7 +544,8 @@ private:
       const parser::CharBlock &refPosition) const {
     for (const Symbol *ref : refs) {
       if (uses.find(ref) != uses.end()) {
-        context_.SayWithDecl(*ref, refPosition, std::move(errorMessage));
+        context_.SayWithDecl(
+            *ref, refPosition, std::move(errorMessage), ref->name());
         return;
       }
     }

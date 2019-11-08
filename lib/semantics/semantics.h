@@ -139,7 +139,7 @@ public:
   template<typename... A>
   void SayWithDecl(const Symbol &symbol, const parser::CharBlock &at,
       parser::MessageFixedText &&msg, A &&... args) {
-    auto &message{Say(at, msg, symbol.name(), args...)};
+    auto &message{Say(at, std::move(msg), args...)};
     if (const auto *details{symbol.detailsIf<UseDetails>()}) {
       message.Attach(details->location(),
           "It is use-associated with '%s' in module '%s'"_err_en_US,
