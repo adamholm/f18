@@ -14,11 +14,11 @@
 
 // Defines API between compiled code and I/O runtime library.
 
-#ifndef FORTRAN_RUNTIME_IO_H_
-#define FORTRAN_RUNTIME_IO_H_
+#ifndef FORTRAN_RUNTIME_IO_API_H_
+#define FORTRAN_RUNTIME_IO_API_H_
 
 #include "entry-names.h"
-#include "stat.h"
+#include "magic-numbers.h"
 #include <cinttypes>
 #include <cstddef>
 
@@ -218,8 +218,8 @@ int IONAME(EndIoStatement)(Cookie);
 // (See 12.11.5 in Fortran 2018 for the complete requirements;
 // these constants must match the values of their corresponding
 // named constants in the predefined module ISO_FORTRAN_ENV, so
-// they're actually defined in another iostat.h header file that
-// can be included both here and there.)
+// they're actually defined in another magic-numbers.h header file
+// so that they can be included both here and there.)
 enum Iostat {
   // Other errors have values >1
   IostatInquireInternalUnit = FORTRAN_RUNTIME_IOSTAT_INQUIRE_INTERNAL_UNIT,
