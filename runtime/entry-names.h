@@ -23,9 +23,9 @@
 // backward compatibility.
 
 #ifndef RTNAME
-#define PREFIX _FORTRAN_
-#define STANDARD 2018
+#define PREFIX _F
+#define STANDARD 18
 #define REVISION a
-#define SUFFIX _RUNTIME_
+#define SUFFIX RT
 #define RTNAME(name) PREFIX##STANDARD##REVISION##SUFFIX##name
 #endif

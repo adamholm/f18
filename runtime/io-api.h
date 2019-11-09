@@ -41,7 +41,7 @@ extern "C" {
 
 // These functions initiate data transfer statements (READ, WRITE, PRINT).
 // Example: PRINT *, 666 is implemented as the series of calls:
-//   Cookie cookie{BeginExternalListOutput(DefaultUnit)};
+//   Cookie cookie{BeginExternalListOutput(DefaultUnit,__FILE__,__LINE__)};
 //   OutputInteger64(cookie, 666);
 //   EndIoStatement(cookie);
 
@@ -130,7 +130,7 @@ AsynchronousId IONAME(BeginAsynchronousOutput)(ExternalUnit, std::int64_t REC,
     int sourceLine = 0);
 AsynchronousId IONAME(BeginAsynchronousInput)(ExternalUnit, std::int64_t REC,
     char *, std::size_t, const char *sourceFile = nullptr, int sourceLine = 0);
-Cookie IONAME(WaitForAsynchronousIo)(ExternalUnit, AsynchronousId);  // WAIT
+Cookie IONAME(BeginWait)(ExternalUnit, AsynchronousId);
 
 // Other I/O statements
 // TODO: OPEN & INQUIRE
@@ -147,9 +147,15 @@ Cookie IONAME(BeginRewind)(
 
 // If an I/O statement has any IOSTAT=, ERR=, END=, or EOR= specifiers,
 // call EnableHandlers() immediately after the Begin...() call.
-// This will cause the runtime library to defer those error/end
+// This call makes the runtime library defer those particular error/end
 // conditions to the EndIoStatement() call rather than terminating
-// the image.
+// the image.  E.g., for READ(*,*,END=666) A, B
+//   Cookie cookie{BeginExternalListInput(DefaultUnit,__FILE__,__LINE__)};
+//   EnableHandlers(cookie, false, false, true /*END=*/, false);
+//   if (InputReal64(cookie, &A))
+//     InputReal64(cookie, &B);
+//   if (EndIoStatement(cookie) == FORTRAN_RUTIME_IOSTAT_END) goto label666;
+
 void IONAME(EnableHandlers)(Cookie, bool HasIostat = false, bool HasErr = false,
     bool HasEnd = false, bool HasEor = false);
 
