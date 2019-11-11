@@ -225,25 +225,25 @@ std::size_t IONAME(GetSize)(Cookie);  // SIZE=
 // SetDelim(), GetIoMsg(), SetPad(), SetRound(), & SetSign()
 // are also acceptable for OPEN.
 // ACCESS=SEQUENTIAL, DIRECT, STREAM
-void IONAME(SetAccess, Cookie, const char *, std::size_t);
+bool IONAME(SetAccess, Cookie, const char *, std::size_t);
 // ACTION=READ, WRITE, or READWRITE
-void IONAME(SetAction, Cookie, const char *, std::size_t);
+bool IONAME(SetAction, Cookie, const char *, std::size_t);
 // ASYNCHRONOUS=YES, NO
-void IONAME(SetAsynchronous, Cookie, const char *, std::size_t);
+bool IONAME(SetAsynchronous, Cookie, const char *, std::size_t);
 // ENCODING=UTF-8, DEFAULT
-void IONAME(SetEncoding, Cookie, const char *, std::size_t);
+bool IONAME(SetEncoding, Cookie, const char *, std::size_t);
 // FORM=FORMATTED, UNFORMATTED
-void IONAME(SetForm, Cookie, const char *, std::size_t);
+bool IONAME(SetForm, Cookie, const char *, std::size_t);
 // POSITION=ASIS, REWIND, APPEND
-void IONAME(SetPosition, Cookie, const char *, std::size_t);
-void IONAME(SetRecl, Cookie, std::size_t);  // RECL=
+bool IONAME(SetPosition, Cookie, const char *, std::size_t);
+bool IONAME(SetRecl, Cookie, std::size_t);  // RECL=
 // STATUS=OLD, NEW, SCRATCH, REPLACE, UNKNOWN
-void IONAME(SetStatus, Cookie, const char *, std::size_t);
+bool IONAME(SetStatus, Cookie, const char *, std::size_t);
 
 // SetFile() may pass a CHARACTER argument of non-default kind,
 // and such filenames are converted to UTF-8 before being
 // presented to the filesystem.
-void IONAME(SetFile, Cookie, const char *, std::size_t, int kind = 1);
+bool IONAME(SetFile, Cookie, const char *, std::size_t, int kind = 1);
 
 // GetNewUnit() must not be called until after all Set...()
 // connection list specifiers have been called after
