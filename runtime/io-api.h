@@ -178,21 +178,21 @@ void IONAME(EnableHandlers)(Cookie, bool HasIostat = false, bool HasErr = false,
 // The interfaces that pass a default-kind CHARACTER argument
 // are limited to passing specific case-insensitive keyword values.
 // ADVANCE=YES, NO
-void IONAME(SetAdvance)(Cookie, const char *, std::size_t);
+bool IONAME(SetAdvance)(Cookie, const char *, std::size_t);
 // BLANK=NULL, ZERO
-void IONAME(SetBlank)(Cookie, const char *, std::size_t);
+bool IONAME(SetBlank)(Cookie, const char *, std::size_t);
 // DECIMAL=COMMA, POINT
-void IONAME(SetDecimal)(Cookie, const char *, std::size_t);
+bool IONAME(SetDecimal)(Cookie, const char *, std::size_t);
 // DELIM=APOSTROPHE, QUOTE, NONE
-void IONAME(SetDelim)(Cookie, const char *, std::size_t);
+bool IONAME(SetDelim)(Cookie, const char *, std::size_t);
 // PAD=YES, NO
-void IONAME(SetPad)(Cookie, const char *, std::size_t);
-void IONAME(SetPos)(Cookie, std::int64_t);
-void IONAME(SetRec)(Cookie, std::int64_t);
+bool IONAME(SetPad)(Cookie, const char *, std::size_t);
+bool IONAME(SetPos)(Cookie, std::int64_t);
+bool IONAME(SetRec)(Cookie, std::int64_t);
 // ROUND=UP, DOWN, ZERO, NEAREST, COMPATIBLE, PROCESSOR_DEFINED
-void IONAME(SetRound)(Cookie, const char *, std::size_t);
+bool IONAME(SetRound)(Cookie, const char *, std::size_t);
 // SIGN=PLUS, SUPPRESS, PROCESSOR_DEFINED
-void IONAME(SetSign)(Cookie, const char *, std::size_t);
+bool IONAME(SetSign)(Cookie, const char *, std::size_t);
 
 // Data item transfer for modes other than namelist.
 // Any data object that can be passed as an actual argument without the
