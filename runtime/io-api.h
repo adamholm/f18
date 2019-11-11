@@ -144,12 +144,19 @@ Cookie IONAME(BeginEndfile)(
 Cookie IONAME(BeginRewind)(
     ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
 
-// OPEN(UNIT=) and OPEN(NEWUNIT=) are distinct interfaces.
+// OPEN(UNIT=) and OPEN(NEWUNIT=) have distinct interfaces.
 Cookie IONAME(BeginOpenUnit)(
     ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
 Cookie IONAME(BeginOpenNewUnit)(
     const char *sourceFile = nullptr, int sourceLine = 0);
-// TODO: INQUIRE
+
+// The variant forms of INQUIRE() statements have distinct interfaces.
+// BeginInquireIoLength() is basically a no-op output statement.
+Cookie IONAME(BeginInquireUnit)(
+    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginInquireFile)(const char *, std::size_t, int kind = 1,
+    const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginInquireIoLength(const char *sourceFile = nullptr, int sourceLine = 0);
 
 // If an I/O statement has any IOSTAT=, ERR=, END=, or EOR= specifiers,
 // call EnableHandlers() immediately after the Begin...() call.
@@ -218,7 +225,8 @@ bool IONAME(InputAscii)(Cookie, char *, std::size_t);
 bool IONAME(OutputLogical)(Cookie, bool);
 bool IONAME(InputLogical)(Cookie, bool &);
 
-std::size_t IONAME(GetSize)(Cookie);  // SIZE=
+// SIZE= on a data transfer, thus far, or INQUIRE(IOLENGTH=)
+bool IONAME(GetSize)(Cookie, std::int64_t, int kind = 8);
 
 // Additional specifier interfaces for the connection-list of
 // on OPEN statement (only).  SetBlank(), SetDecimal(),
@@ -253,6 +261,19 @@ bool IONAME(GetNewUnit)(Cookie, int &, int kind = 4);  // NEWUNIT=
 // GetIoMsg() does not modify its argument unless an error or
 // end-of-record/file condition is present.
 void IONAME(GetIoMsg)(Cookie, char *, std::size_t);  // IOMSG=
+
+// INQUIRE() specifiers are mostly identified by their NUL-terminated
+// case-insensitive names.
+// ACCESS, ACTION, ASYNCHRONOUS, BLANK, DECIMAL, DELIM, DIRECT, ENCODING,
+// FORM, FORMATTED, NAME, PAD, POSITION, READ, READWRITE, ROUND,
+// SEQUENTIAL, SIGN, STREAM, UNFORMATTED, WRITE:
+bool IONAME(InquireCharacter)(Cookie, const char *specifier, char *, std::size_t);
+// EXIST, NAMED, OPENED, and PENDING (without ID):
+bool IONAME(InquireLogical)(Cookie, const char *specifier, bool &);
+// PENDING with ID
+bool IONAME(InquirePendingId)(Cookie, std::int64_t, bool &);
+// NEXTREC, NUMBER, POS, RECL, SIZE
+bool IONAME(InquireInteger64)(Cookie, const char *specifier, std::int64_t &, int kind = 8);
 
 // This function must be called to end an I/O statement, and its
 // cookie value may not be used afterwards unless it is recycled
