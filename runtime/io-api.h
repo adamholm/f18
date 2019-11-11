@@ -133,7 +133,6 @@ AsynchronousId IONAME(BeginAsynchronousInput)(ExternalUnit, std::int64_t REC,
 Cookie IONAME(BeginWait)(ExternalUnit, AsynchronousId);
 
 // Other I/O statements
-// TODO: OPEN & INQUIRE
 Cookie IONAME(BeginClose)(
     ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
 Cookie IONAME(BeginFlush)(
@@ -145,6 +144,13 @@ Cookie IONAME(BeginEndfile)(
 Cookie IONAME(BeginRewind)(
     ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
 
+// OPEN(UNIT=) and OPEN(NEWUNIT=) are distinct interfaces.
+Cookie IONAME(BeginOpenUnit)(
+    ExternalUnit, const char *sourceFile = nullptr, int sourceLine = 0);
+Cookie IONAME(BeginOpenNewUnit)(
+    const char *sourceFile = nullptr, int sourceLine = 0);
+// TODO: INQUIRE
+
 // If an I/O statement has any IOSTAT=, ERR=, END=, or EOR= specifiers,
 // call EnableHandlers() immediately after the Begin...() call.
 // This call makes the runtime library defer those particular error/end
@@ -155,20 +161,30 @@ Cookie IONAME(BeginRewind)(
 //   if (InputReal64(cookie, &A))
 //     InputReal64(cookie, &B);
 //   if (EndIoStatement(cookie) == FORTRAN_RUTIME_IOSTAT_END) goto label666;
+// An output or OPEN statement may not enable HasEnd or HasEor.
 
 void IONAME(EnableHandlers)(Cookie, bool HasIostat = false, bool HasErr = false,
     bool HasEnd = false, bool HasEor = false);
 
 // Control list options.  These return false on a error that the
 // Begin...() call has specified will be handled by the caller.
+// The interfaces that pass a default-kind CHARACTER argument
+// are limited to passing specific case-insensitive keyword values.
+// ADVANCE=YES, NO
 void IONAME(SetAdvance)(Cookie, const char *, std::size_t);
+// BLANK=NULL, ZERO
 void IONAME(SetBlank)(Cookie, const char *, std::size_t);
+// DECIMAL=COMMA, POINT
 void IONAME(SetDecimal)(Cookie, const char *, std::size_t);
+// DELIM=APOSTROPHE, QUOTE, NONE
 void IONAME(SetDelim)(Cookie, const char *, std::size_t);
+// PAD=YES, NO
 void IONAME(SetPad)(Cookie, const char *, std::size_t);
 void IONAME(SetPos)(Cookie, std::int64_t);
 void IONAME(SetRec)(Cookie, std::int64_t);
+// ROUND=UP, DOWN, ZERO, NEAREST, COMPATIBLE, PROCESSOR_DEFINED
 void IONAME(SetRound)(Cookie, const char *, std::size_t);
+// SIGN=PLUS, SUPPRESS, PROCESSOR_DEFINED
 void IONAME(SetSign)(Cookie, const char *, std::size_t);
 
 // Data item transfer for modes other than namelist.
@@ -203,6 +219,36 @@ bool IONAME(OutputLogical)(Cookie, bool);
 bool IONAME(InputLogical)(Cookie, bool &);
 
 std::size_t IONAME(GetSize)(Cookie);  // SIZE=
+
+// Additional specifier interfaces for the connection-list of
+// on OPEN statement (only).  SetBlank(), SetDecimal(),
+// SetDelim(), GetIoMsg(), SetPad(), SetRound(), & SetSign()
+// are also acceptable for OPEN.
+// ACCESS=SEQUENTIAL, DIRECT, STREAM
+void IONAME(SetAccess, Cookie, const char *, std::size_t);
+// ACTION=READ, WRITE, or READWRITE
+void IONAME(SetAction, Cookie, const char *, std::size_t);
+// ASYNCHRONOUS=YES, NO
+void IONAME(SetAsynchronous, Cookie, const char *, std::size_t);
+// ENCODING=UTF-8, DEFAULT
+void IONAME(SetEncoding, Cookie, const char *, std::size_t);
+// FORM=FORMATTED, UNFORMATTED
+void IONAME(SetForm, Cookie, const char *, std::size_t);
+// POSITION=ASIS, REWIND, APPEND
+void IONAME(SetPosition, Cookie, const char *, std::size_t);
+void IONAME(SetRecl, Cookie, std::size_t);  // RECL=
+// STATUS=OLD, NEW, SCRATCH, REPLACE, UNKNOWN
+void IONAME(SetStatus, Cookie, const char *, std::size_t);
+
+// SetFile() may pass a CHARACTER argument of non-default kind,
+// and such filenames are converted to UTF-8 before being
+// presented to the filesystem.
+void IONAME(SetFile, Cookie, const char *, std::size_t, int kind = 1);
+
+// GetNewUnit() must not be called until after all Set...()
+// connection list specifiers have been called after
+// BeginOpenNewUnit().
+bool IONAME(GetNewUnit)(Cookie, int &, int kind = 4);  // NEWUNIT=
 
 // GetIoMsg() does not modify its argument unless an error or
 // end-of-record/file condition is present.
