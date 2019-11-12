@@ -61,18 +61,18 @@ module m
     real, pointer, intent(out) :: a ! ok if pointer
   end function
   pure real function f05(a) ! C1583
-    real, intent(out), value :: a ! weird, but ok
+    real, value :: a ! weird, but ok (VALUE without INTENT)
   end function
   pure function f06() ! C1584
-    !ERROR: Result of PURE function cannot have an impure FINAL procedure
+    !ERROR: Result of PURE function may not have an impure FINAL procedure
     type(impureFinal) :: f06
   end function
   pure function f07() ! C1585
-    !ERROR: Result of PURE function cannot be both polymorphic and ALLOCATABLE
+    !ERROR: Result of PURE function may not be both polymorphic and ALLOCATABLE
     class(t), allocatable :: f07
   end function
   pure function f08() ! C1585
-    !ERROR: Result of PURE function cannot have a polymorphic ALLOCATABLE ultimate component
+    !ERROR: Result of PURE function may not have a polymorphic ALLOCATABLE ultimate component
     type(polyAlloc) :: f08
   end function
 
@@ -84,41 +84,41 @@ module m
     real, pointer :: a
   end subroutine
   pure subroutine s02(a) ! C1587
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure cannot have an impure FINAL procedure
+    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not have an impure FINAL procedure
     type(impureFinal), intent(out) :: a
   end subroutine
   pure subroutine s03(a) ! C1588
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure cannot be polymorphic
+    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not be polymorphic
     class(t), intent(out) :: a
   end subroutine
   pure subroutine s04(a) ! C1588
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure cannot have a polymorphic ultimate component
+    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not have a polymorphic ultimate component
     class(polyAlloc), intent(out) :: a
   end subroutine
   pure subroutine s05 ! C1589
-    !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     real, save :: v1
-    !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     real :: v2 = 0.
-    !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     real :: v3
     data v3/0./
-    !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     real :: v4
     common /blk/ v4
     block
-      !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
       real, save :: v5
-      !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
       real :: v6 = 0.
-      !ERROR: A PURE subprogram cannot have local variables with the SAVE attribute
+      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     end block
   end subroutine
   pure subroutine s06 ! C1589
-    !ERROR: A PURE subprogram cannot have local variables with the VOLATILE attribute
+    !ERROR: A PURE subprogram may not have local variables with the VOLATILE attribute
     real, volatile :: v1
     block
-      !ERROR: A PURE subprogram cannot have local variables with the VOLATILE attribute
+      !ERROR: A PURE subprogram may not have local variables with the VOLATILE attribute
       real, volatile :: v2
     end block
   end subroutine

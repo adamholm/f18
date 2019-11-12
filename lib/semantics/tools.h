@@ -123,6 +123,8 @@ inline bool IsProtected(const Symbol &symbol) {
   return symbol.attrs().test(Attr::PROTECTED);
 }
 bool IsFinalizable(const Symbol &);
+bool IsFinalizable(const DerivedTypeSpec &);
+bool HasImpureFinal(const DerivedTypeSpec &);
 bool IsCoarray(const Symbol &);
 inline bool IsAssumedSizeArray(const Symbol &symbol) {
   const auto *details{symbol.detailsIf<ObjectEntityDetails>()};
@@ -292,14 +294,14 @@ template<typename T> std::optional<std::int64_t> GetIntValue(const T &x) {
 //
 // Note that iterators are made in such a way that one can easily test and build
 // info message in the following way:
-//    ComponentIterator<ComponentIterator> comp{derived}
+//    ComponentIterator<ComponentKind::...> comp{derived}
 //    if (auto it{std::find_if(comp.begin(), comp.end(), predicate)}) {
 //       msg = it.BuildResultDesignatorName() + " verifies predicates";
-//       const Symbol* component{*it};
+//       const Symbol *component{*it};
 //       ....
 //    }
 
-ENUM_CLASS(ComponentKind, Ordered, Direct, Ultimate, Potential)
+ENUM_CLASS(ComponentKind, Ordered, Direct, Ultimate, Potential, Scope)
 
 template<ComponentKind componentKind> class ComponentIterator {
 public:
@@ -350,16 +352,25 @@ public:
     std::string BuildResultDesignatorName() const;
 
   private:
-    using name_iterator = typename std::list<SourceName>::const_iterator;
+    using name_iterator =
+        std::conditional_t<componentKind == ComponentKind::Scope,
+            typename Scope::const_iterator,
+            typename std::list<SourceName>::const_iterator>;
 
     class ComponentPathNode {
     public:
       explicit ComponentPathNode(const DerivedTypeSpec &derived)
         : derived_{derived} {
-        const std::list<SourceName> &nameList{
-            derived.typeSymbol().get<DerivedTypeDetails>().componentNames()};
-        nameIterator_ = nameList.cbegin();
-        nameEnd_ = nameList.cend();
+        if constexpr (componentKind == ComponentKind::Scope) {
+          const Scope &scope{DEREF(derived.scope())};
+          nameIterator_ = scope.cbegin();
+          nameEnd_ = scope.cend();
+        } else {
+          const std::list<SourceName> &nameList{
+              derived.typeSymbol().get<DerivedTypeDetails>().componentNames()};
+          nameIterator_ = nameList.cbegin();
+          nameEnd_ = nameList.cend();
+        }
       }
       const Symbol *component() const { return component_; }
       void set_component(const Symbol &component) { component_ = &component; }
@@ -408,10 +419,12 @@ extern template class ComponentIterator<ComponentKind::Ordered>;
 extern template class ComponentIterator<ComponentKind::Direct>;
 extern template class ComponentIterator<ComponentKind::Ultimate>;
 extern template class ComponentIterator<ComponentKind::Potential>;
+extern template class ComponentIterator<ComponentKind::Scope>;
 using OrderedComponentIterator = ComponentIterator<ComponentKind::Ordered>;
 using DirectComponentIterator = ComponentIterator<ComponentKind::Direct>;
 using UltimateComponentIterator = ComponentIterator<ComponentKind::Ultimate>;
 using PotentialComponentIterator = ComponentIterator<ComponentKind::Potential>;
+using ScopeComponentIterator = ComponentIterator<ComponentKind::Scope>;
 
 // Common component searches, the iterator returned is referring to the first
 // component, according to the order defined for the related ComponentIterator,

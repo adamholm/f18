@@ -57,8 +57,9 @@ private:
   evaluate::FoldingContext &foldingContext_{context_.foldingContext()};
   parser::ContextualMessages &messages_{foldingContext_.messages()};
   const Scope *scope_{nullptr};
-  bool inBindC_{false};  // scope is BIND(C)
-  bool inPure_{false};  // scope is PURE
+  // This symbol is the one attached to the innermost enclosing scope
+  // that has a symbol.
+  const Symbol *innermostSymbol_{nullptr};
 };
 
 void CheckHelper::Check(const ParamValue &value, bool canBeAssumed) {
@@ -94,10 +95,7 @@ void CheckHelper::Check(const Symbol &symbol) {
     return;
   }
   const DeclTypeSpec *type{symbol.GetUltimate().GetType()};
-  const DerivedTypeSpec *derived{nullptr};
-  if (type) {
-    derived = type->AsDerived();
-  }
+  const DerivedTypeSpec *derived{type ? type->AsDerived() : nullptr};
   auto save{messages_.SetLocation(symbol.name())};
   context_.set_location(symbol.name());
   bool isAssociated{symbol.has<UseDetails>() || symbol.has<HostAssocDetails>()};
@@ -107,6 +105,8 @@ void CheckHelper::Check(const Symbol &symbol) {
   if (isAssociated) {
     return;  // only care about checking VOLATILE on associated symbols
   }
+  bool inPure{innermostSymbol_ && IsPureProcedure(*innermostSymbol_)};
+  bool inFunction{innermostSymbol_ && IsFunction(*innermostSymbol_)};
   if (type) {
     bool canHaveAssumedParameter{IsNamedConstant(symbol) ||
         IsAssumedLengthCharacterFunction(symbol) ||
@@ -119,6 +119,17 @@ void CheckHelper::Check(const Symbol &symbol) {
       canHaveAssumedParameter |= symbol.has<AssocEntityDetails>();
     }
     Check(*type, canHaveAssumedParameter);
+    if (inPure && inFunction && IsFunctionResult(symbol)) {
+      if (derived && HasImpureFinal(*derived)) {  // C1584
+        messages_.Say(
+            "Result of PURE function may not have an impure FINAL procedure"_err_en_US);
+      }
+      if (type && type->IsPolymorphic() && IsAllocatable(symbol)) {  // C1585
+        messages_.Say(
+            "Result of PURE function may not be both polymorphic and ALLOCATABLE"_err_en_US);
+      }
+      // TODO pmk continue with polym. ALLOC. ultimate component
+    }
   }
   if (IsAssumedLengthCharacterFunction(symbol)) {  // C723
     if (symbol.attrs().test(Attr::RECURSIVE)) {
@@ -160,16 +171,23 @@ void CheckHelper::Check(const Symbol &symbol) {
         }
       }
     }
-    if (object->isDummy() && symbol.attrs().test(Attr::INTENT_OUT)) {
-      if (FindUltimateComponent(symbol, [](const Symbol &symbol) {
-            return IsCoarray(symbol) && IsAllocatable(symbol);
-          })) {  // C846
-        messages_.Say(
-            "An INTENT(OUT) dummy argument may not be, or contain, an ALLOCATABLE coarray"_err_en_US);
+    if (object->isDummy()) {
+      if (symbol.attrs().test(Attr::INTENT_OUT)) {
+        if (FindUltimateComponent(symbol, [](const Symbol &symbol) {
+              return IsCoarray(symbol) && IsAllocatable(symbol);
+            })) {  // C846
+          messages_.Say(
+              "An INTENT(OUT) dummy argument may not be, or contain, an ALLOCATABLE coarray"_err_en_US);
+        }
+        if (IsOrContainsEventOrLockComponent(symbol)) {  // C847
+          messages_.Say(
+              "An INTENT(OUT) dummy argument may not be, or contain, EVENT_TYPE or LOCK_TYPE"_err_en_US);
+        }
       }
-      if (IsOrContainsEventOrLockComponent(symbol)) {  // C847
+      if (inPure && inFunction && !IsPointer(symbol) && !IsIntentIn(symbol) &&
+          !symbol.attrs().test(Attr::VALUE)) {  // C1583
         messages_.Say(
-            "An INTENT(OUT) dummy argument may not be, or contain, EVENT_TYPE or LOCK_TYPE"_err_en_US);
+            "non-POINTER dummy argument of PURE function must be INTENT(IN) or VALUE"_err_en_US);
       }
     }
   } else if (auto *proc{symbol.detailsIf<ProcEntityDetails>()}) {
@@ -230,7 +248,8 @@ void CheckHelper::CheckValue(
   if (symbol.attrs().test(Attr::VOLATILE)) {
     messages_.Say("VALUE attribute may not apply to a VOLATILE"_err_en_US);
   }
-  if (inBindC_ && IsOptional(symbol)) {
+  if (innermostSymbol_ && IsBindCProcedure(*innermostSymbol_) &&
+      IsOptional(symbol)) {
     messages_.Say(
         "VALUE attribute may not apply to an OPTIONAL in a BIND(C) procedure"_err_en_US);
   }
@@ -268,8 +287,9 @@ void CheckHelper::CheckVolatile(const Symbol &symbol, bool isAssociated,
 
 void CheckHelper::Check(const Scope &scope) {
   scope_ = &scope;
-  inBindC_ = IsBindCProcedure(scope);
-  inPure_ = IsPureProcedure(scope);
+  if (scope.symbol()) {
+    innermostSymbol_ = scope.symbol();
+  }
   for (const auto &pair : scope) {
     Check(*pair.second);
   }

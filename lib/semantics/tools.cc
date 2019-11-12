@@ -23,6 +23,7 @@
 #include "../parser/parse-tree.h"
 #include "../parser/tools.h"
 #include <algorithm>
+#include <iostream>  // TODO pmk rm
 #include <set>
 #include <variant>
 
@@ -211,6 +212,7 @@ bool IsProcedure(const Symbol &symbol) {
           [](const GenericDetails &) { return true; },
           [](const ProcBindingDetails &) { return true; },
           [](const UseDetails &x) { return IsProcedure(x.symbol()); },
+          // TODO: FinalProcDetails
           [](const auto &) { return false; },
       },
       symbol.details());
@@ -472,17 +474,25 @@ bool CanBeTypeBoundProc(const Symbol *symbol) {
 bool IsFinalizable(const Symbol &symbol) {
   if (const DeclTypeSpec * type{symbol.GetType()}) {
     if (const DerivedTypeSpec * derived{type->AsDerived()}) {
-      if (const Scope * scope{derived->scope()}) {
-        for (auto &pair : *scope) {
-          Symbol &symbol{*pair.second};
-          if (symbol.has<FinalProcDetails>()) {
-            return true;
-          }
-        }
-      }
+      return IsFinalizable(*derived);
     }
   }
   return false;
+}
+
+bool IsFinalizable(const DerivedTypeSpec &derived) {
+  ScopeComponentIterator components{derived};
+  return std::find_if(components.begin(), components.end(),
+             [](const Symbol &x) { return x.has<FinalProcDetails>(); }) !=
+      components.end();
+}
+
+bool HasImpureFinal(const DerivedTypeSpec &derived) {
+  ScopeComponentIterator components{derived};
+  return std::find_if(
+             components.begin(), components.end(), [](const Symbol &x) {
+               return x.has<FinalProcDetails>() && !x.attrs().test(Attr::PURE);
+             }) != components.end();
 }
 
 bool IsCoarray(const Symbol &symbol) { return symbol.Corank() > 0; }
@@ -996,6 +1006,8 @@ ComponentIterator<componentKind>::const_iterator::PlanComponentTraversal(
           traverse = !IsAllocatableOrPointer(component);
         } else if constexpr (componentKind == ComponentKind::Potential) {
           traverse = !IsPointer(component);
+        } else if constexpr (componentKind == ComponentKind::Scope) {
+          traverse = !IsAllocatableOrPointer(component);
         }
         if (traverse) {
           const Symbol &newTypeSymbol{derived->typeSymbol()};
@@ -1060,6 +1072,11 @@ void ComponentIterator<componentKind>::const_iterator::Increment() {
     auto &nameIterator{deepest.nameIterator()};
     if (nameIterator == deepest.nameEnd()) {
       componentPath_.pop_back();
+    } else if constexpr (componentKind == ComponentKind::Scope) {
+      deepest.set_component(*nameIterator++->second);
+      deepest.set_descended(false);
+      deepest.set_visited(true);
+      return;  // this is the next component to visit, before descending
     } else {
       const Scope &scope{deepest.GetScope()};
       auto scopeIter{scope.find(*nameIterator++)};
@@ -1093,6 +1110,7 @@ template class ComponentIterator<ComponentKind::Ordered>;
 template class ComponentIterator<ComponentKind::Direct>;
 template class ComponentIterator<ComponentKind::Ultimate>;
 template class ComponentIterator<ComponentKind::Potential>;
+template class ComponentIterator<ComponentKind::Scope>;
 
 UltimateComponentIterator::const_iterator FindCoarrayUltimateComponent(
     const DerivedTypeSpec &derived) {

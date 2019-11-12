@@ -62,7 +62,7 @@ module module1
 
  contains
 
-  pure real function pf1(dummy1, dummy2, dummy3, dummy4)
+  pure subroutine ps1(dummy1, dummy2, dummy3, dummy4)
     real, target :: local1
     type(t1(0)) :: x1
     type(t2(0)) :: x2
@@ -74,7 +74,6 @@ module module1
     real, intent(inout), target :: dummy4[*]
     real, target :: commonvar1
     common /cblock/ commonvar1
-    pf1 = 0.
     x1 = t1(0)(local1)
     !ERROR: Externally visible object 'usedfrom1' must not be associated with pointer component 'pt1' in a PURE procedure
     x1 = t1(0)(usedfrom1)
@@ -135,7 +134,7 @@ module module1
       !ERROR: Externally visible object 'modulevar4' must not be associated with pointer component 'ptop' in a PURE procedure
       x4a = t4(0)(modulevar4)
     end subroutine subr
-  end function pf1
+  end subroutine
 
   impure real function ipf1(dummy1, dummy2, dummy3, dummy4)
     real, target :: local1
