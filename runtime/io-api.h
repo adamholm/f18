@@ -225,9 +225,6 @@ bool IONAME(InputAscii)(Cookie, char *, std::size_t);
 bool IONAME(OutputLogical)(Cookie, bool);
 bool IONAME(InputLogical)(Cookie, bool &);
 
-// SIZE= on a data transfer, thus far, or INQUIRE(IOLENGTH=)
-bool IONAME(GetSize)(Cookie, std::int64_t, int kind = 8);
-
 // Additional specifier interfaces for the connection-list of
 // on OPEN statement (only).  SetBlank(), SetDecimal(),
 // SetDelim(), GetIoMsg(), SetPad(), SetRound(), & SetSign()
@@ -245,7 +242,10 @@ bool IONAME(SetForm, Cookie, const char *, std::size_t);
 // POSITION=ASIS, REWIND, APPEND
 bool IONAME(SetPosition, Cookie, const char *, std::size_t);
 bool IONAME(SetRecl, Cookie, std::size_t);  // RECL=
-// STATUS=OLD, NEW, SCRATCH, REPLACE, UNKNOWN
+
+// STATUS can be set during an OPEN or CLOSE statement.
+// For OPEN: STATUS=OLD, NEW, SCRATCH, REPLACE, UNKNOWN
+// For CLOSE: STATUS=KEEP, DELETE
 bool IONAME(SetStatus, Cookie, const char *, std::size_t);
 
 // SetFile() may pass a CHARACTER argument of non-default kind,
@@ -257,6 +257,12 @@ bool IONAME(SetFile, Cookie, const char *, std::size_t, int kind = 1);
 // connection list specifiers have been called after
 // BeginOpenNewUnit().
 bool IONAME(GetNewUnit)(Cookie, int &, int kind = 4);  // NEWUNIT=
+
+// READ(SIZE=), after all input items
+bool IONAME(GetSize)(Cookie, std::int64_t, int kind = 8);
+
+// INQUIRE(IOLENGTH=), after all output items
+bool IONAME(GetIoLength)(Cookie, std::int64_t, int kind = 8);
 
 // GetIoMsg() does not modify its argument unless an error or
 // end-of-record/file condition is present.
@@ -282,7 +288,7 @@ bool IONAME(InquireInteger64)(Cookie, const char *specifier, std::int64_t &, int
 // store it into the IOSTAT= variable if there is one, and test
 // it to implement the various branches.  The error condition
 // returned is guaranteed to only be one of the problems that the
-// Begin...() call has indicated should be handled in compiled code
+// EnableHandlers() call has indicated should be handled in compiled code
 // rather than by terminating the image.
 int IONAME(EndIoStatement)(Cookie);
 
