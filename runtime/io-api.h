@@ -37,7 +37,7 @@ static constexpr ExternalUnit DefaultUnit{-1};  // READ(*), WRITE(*), PRINT
 
 extern "C" {
 
-#define IONAME(name) RTNAME(io_##name)
+#define IONAME(name) RTNAME(io##name)
 
 // These functions initiate data transfer statements (READ, WRITE, PRINT).
 // Example: PRINT *, 666 is implemented as the series of calls:
@@ -160,16 +160,20 @@ Cookie IONAME(BeginInquireIoLength(const char *sourceFile = nullptr, int sourceL
 
 // If an I/O statement has any IOSTAT=, ERR=, END=, or EOR= specifiers,
 // call EnableHandlers() immediately after the Begin...() call.
+// An output or OPEN statement may not enable HasEnd or HasEor.
 // This call makes the runtime library defer those particular error/end
 // conditions to the EndIoStatement() call rather than terminating
-// the image.  E.g., for READ(*,*,END=666) A, B
+// the image.  E.g., for READ(*,*,END=666) A, B, (C(J),J=1,N)
 //   Cookie cookie{BeginExternalListInput(DefaultUnit,__FILE__,__LINE__)};
 //   EnableHandlers(cookie, false, false, true /*END=*/, false);
-//   if (InputReal64(cookie, &A))
-//     InputReal64(cookie, &B);
+//   if (InputReal64(cookie, &A)) {
+//     if (InputReal64(cookie, &B)) {
+//       for (int J{1}; J<=N; ++J) {
+//         if (!InputReal64(cookie, &C[J])) break;
+//       }
+//     }
+//   }
 //   if (EndIoStatement(cookie) == FORTRAN_RUTIME_IOSTAT_END) goto label666;
-// An output or OPEN statement may not enable HasEnd or HasEor.
-
 void IONAME(EnableHandlers)(Cookie, bool HasIostat = false, bool HasErr = false,
     bool HasEnd = false, bool HasEor = false);
 
@@ -281,17 +285,6 @@ bool IONAME(InquirePendingId)(Cookie, std::int64_t, bool &);
 // NEXTREC, NUMBER, POS, RECL, SIZE
 bool IONAME(InquireInteger64)(Cookie, const char *specifier, std::int64_t &, int kind = 8);
 
-// This function must be called to end an I/O statement, and its
-// cookie value may not be used afterwards unless it is recycled
-// by the runtime library to serve a later I/O statement.
-// The return value can be used to implement IOSTAT=, ERR=, END=, & EOR=;
-// store it into the IOSTAT= variable if there is one, and test
-// it to implement the various branches.  The error condition
-// returned is guaranteed to only be one of the problems that the
-// EnableHandlers() call has indicated should be handled in compiled code
-// rather than by terminating the image.
-int IONAME(EndIoStatement)(Cookie);
-
 // The value of IOSTAT= is zero when no error, end-of-record,
 // or end-of-file condition has arisen; errors are positive values.
 // (See 12.11.5 in Fortran 2018 for the complete requirements;
@@ -308,6 +301,17 @@ enum Iostat {
   IostatFlush =
       FORTRAN_RUNTIME_IOSTAT_FLUSH,  // attempt to FLUSH an unflushable unit
 };
+
+// This function must be called to end an I/O statement, and its
+// cookie value may not be used afterwards unless it is recycled
+// by the runtime library to serve a later I/O statement.
+// The return value can be used to implement IOSTAT=, ERR=, END=, & EOR=;
+// store it into the IOSTAT= variable if there is one, and test
+// it to implement the various branches.  The error condition
+// returned is guaranteed to only be one of the problems that the
+// EnableHandlers() call has indicated should be handled in compiled code
+// rather than by terminating the image.
+enum Iostat IONAME(EndIoStatement)(Cookie);
 
 };  // extern "C"
 }

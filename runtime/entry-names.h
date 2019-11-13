@@ -18,14 +18,11 @@
 // (b) doesn't conflict with other libraries, and
 // (c) prevents incompatible versions of the runtime library from linking
 //
-// The values of STANDARD and REVISION should not be changed until/unless
-// the API to the runtime library has to change in some way that breaks
-// backward compatibility.
+// The value of REVISION should not be changed until/unless the API to the
+// runtime library must change in some way that breaks backward compatibility.
 
 #ifndef RTNAME
 #define PREFIX _F
-#define STANDARD 18
 #define REVISION a
-#define SUFFIX RT
-#define RTNAME(name) PREFIX##STANDARD##REVISION##SUFFIX##name
+#define RTNAME(name) PREFIX##REVISION##name
 #endif
