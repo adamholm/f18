@@ -22,6 +22,7 @@
 #include "type.h"
 #include "../evaluate/check-expression.h"
 #include "../evaluate/fold.h"
+#include "../evaluate/tools.h"
 
 namespace Fortran::semantics {
 
@@ -122,13 +123,23 @@ void CheckHelper::Check(const Symbol &symbol) {
     if (inPure && inFunction && IsFunctionResult(symbol)) {
       if (derived && HasImpureFinal(*derived)) {  // C1584
         messages_.Say(
-            "Result of PURE function may not have an impure FINAL procedure"_err_en_US);
+            "Result of PURE function may not have an impure FINAL subroutine"_err_en_US);
       }
       if (type && type->IsPolymorphic() && IsAllocatable(symbol)) {  // C1585
         messages_.Say(
             "Result of PURE function may not be both polymorphic and ALLOCATABLE"_err_en_US);
       }
-      // TODO pmk continue with polym. ALLOC. ultimate component
+      if (derived) {
+        if (const Symbol *
+            bad{FindUltimateComponent(*derived, [](const Symbol &x) {
+              const DeclTypeSpec *xType{x.GetType()};
+              return xType && xType->IsPolymorphic() && IsAllocatable(x);
+            })}) {
+          evaluate::SayWithDeclaration(messages_, bad,
+              "Result of PURE function may not have polymorphic ALLOCATABLE ultimate component '%s'"_err_en_US,
+              bad->name());
+        }
+      }
     }
   }
   if (IsAssumedLengthCharacterFunction(symbol)) {  // C723
@@ -173,8 +184,8 @@ void CheckHelper::Check(const Symbol &symbol) {
     }
     if (object->isDummy()) {
       if (symbol.attrs().test(Attr::INTENT_OUT)) {
-        if (FindUltimateComponent(symbol, [](const Symbol &symbol) {
-              return IsCoarray(symbol) && IsAllocatable(symbol);
+        if (FindUltimateComponent(symbol, [](const Symbol &x) {
+              return IsCoarray(x) && IsAllocatable(x);
             })) {  // C846
           messages_.Say(
               "An INTENT(OUT) dummy argument may not be, or contain, an ALLOCATABLE coarray"_err_en_US);
@@ -184,10 +195,32 @@ void CheckHelper::Check(const Symbol &symbol) {
               "An INTENT(OUT) dummy argument may not be, or contain, EVENT_TYPE or LOCK_TYPE"_err_en_US);
         }
       }
-      if (inPure && inFunction && !IsPointer(symbol) && !IsIntentIn(symbol) &&
-          !symbol.attrs().test(Attr::VALUE)) {  // C1583
-        messages_.Say(
-            "non-POINTER dummy argument of PURE function must be INTENT(IN) or VALUE"_err_en_US);
+      if (inPure && !IsPointer(symbol) && !IsIntentIn(symbol) &&
+          !symbol.attrs().test(Attr::VALUE)) {
+        if (inFunction) {  // C1583
+          messages_.Say(
+              "non-POINTER dummy argument of PURE function must be INTENT(IN) or VALUE"_err_en_US);
+        } else if (IsIntentOut(symbol)) {
+          if (type && type->IsPolymorphic()) {  // C1588
+            messages_.Say(
+                "An INTENT(OUT) dummy argument of a PURE subroutine may not be polymorphic"_err_en_US);
+          } else if (derived) {
+            if (FindUltimateComponent(*derived, [](const Symbol &x) {
+                  const DeclTypeSpec *type{x.GetType()};
+                  return type && type->IsPolymorphic();
+                })) {  // C1588
+              messages_.Say(
+                  "An INTENT(OUT) dummy argument of a PURE subroutine may not have a polymorphic ultimate component"_err_en_US);
+            }
+            if (HasImpureFinal(*derived)) {  // C1587
+              messages_.Say(
+                  "An INTENT(OUT) dummy argument of a PURE subroutine may not have an impure FINAL subroutine"_err_en_US);
+            }
+          }
+        } else if (!IsIntentInOut(symbol)) {  // C1586
+          messages_.Say(
+              "non-POINTER dummy argument of PURE subroutine must have INTENT() or VALUE attribute"_err_en_US);
+        }
       }
     }
   } else if (auto *proc{symbol.detailsIf<ProcEntityDetails>()}) {

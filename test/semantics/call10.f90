@@ -64,7 +64,7 @@ module m
     real, value :: a ! weird, but ok (VALUE without INTENT)
   end function
   pure function f06() ! C1584
-    !ERROR: Result of PURE function may not have an impure FINAL procedure
+    !ERROR: Result of PURE function may not have an impure FINAL subroutine
     type(impureFinal) :: f06
   end function
   pure function f07() ! C1585
@@ -72,7 +72,7 @@ module m
     class(t), allocatable :: f07
   end function
   pure function f08() ! C1585
-    !ERROR: Result of PURE function may not have a polymorphic ALLOCATABLE ultimate component
+    !ERROR: Result of PURE function may not have polymorphic ALLOCATABLE ultimate component 'a'
     type(polyAlloc) :: f08
   end function
 
@@ -84,16 +84,16 @@ module m
     real, pointer :: a
   end subroutine
   pure subroutine s02(a) ! C1587
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not have an impure FINAL procedure
+    !ERROR: An INTENT(OUT) dummy argument of a PURE subroutine may not have an impure FINAL subroutine
     type(impureFinal), intent(out) :: a
   end subroutine
   pure subroutine s03(a) ! C1588
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not be polymorphic
+    !ERROR: An INTENT(OUT) dummy argument of a PURE subroutine may not be polymorphic
     class(t), intent(out) :: a
   end subroutine
   pure subroutine s04(a) ! C1588
-    !ERROR: An INTENT(OUT) dummy argument of a PURE procedure may not have a polymorphic ultimate component
-    class(polyAlloc), intent(out) :: a
+    !ERROR: An INTENT(OUT) dummy argument of a PURE subroutine may not have a polymorphic ultimate component
+    type(polyAlloc), intent(out) :: a
   end subroutine
   pure subroutine s05 ! C1589
     !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
