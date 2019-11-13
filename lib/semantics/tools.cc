@@ -23,7 +23,6 @@
 #include "../parser/parse-tree.h"
 #include "../parser/tools.h"
 #include <algorithm>
-#include <iostream>  // TODO pmk rm
 #include <set>
 #include <variant>
 
@@ -445,11 +444,21 @@ bool IsSaved(const Symbol &symbol) {
     return false;  // this is a component
   } else if (symbol.attrs().test(Attr::SAVE)) {
     return true;
-  } else if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
-    return object->init().has_value();
-  } else if (IsProcedurePointer(symbol)) {
-    return symbol.get<ProcEntityDetails>().init().has_value();
   } else {
+    if (const auto *object{symbol.detailsIf<ObjectEntityDetails>()}) {
+      if (object->init()) {
+        return true;
+      }
+    } else if (IsProcedurePointer(symbol)) {
+      if (symbol.get<ProcEntityDetails>().init()) {
+        return true;
+      }
+    }
+    if (const Symbol * block{FindCommonBlockContaining(symbol)}) {
+      if (block->attrs().test(Attr::SAVE)) {
+        return true;
+      }
+    }
     return false;
   }
 }
@@ -513,15 +522,17 @@ bool IsAssumedLengthCharacterFunction(const Symbol &symbol) {
   return symbol.has<SubprogramDetails>() && IsAssumedLengthCharacter(symbol);
 }
 
-bool IsExternalInPureContext(const Symbol &symbol, const Scope &scope) {
+const Symbol *IsExternalInPureContext(
+    const Symbol &symbol, const Scope &scope) {
   if (const auto *pureProc{semantics::FindPureProcedureContaining(&scope)}) {
     if (const Symbol * root{GetAssociationRoot(symbol)}) {
-      if (FindExternallyVisibleObject(*root, *pureProc)) {
-        return true;
+      if (const Symbol *
+          visible{FindExternallyVisibleObject(*root, *pureProc)}) {
+        return visible;
       }
     }
   }
-  return false;
+  return nullptr;
 }
 
 bool InProtectedContext(const Symbol &symbol, const Scope &currentScope) {

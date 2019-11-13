@@ -96,34 +96,34 @@ module m
     type(polyAlloc), intent(out) :: a
   end subroutine
   pure subroutine s05 ! C1589
-    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
     real, save :: v1
-    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
     real :: v2 = 0.
-    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !TODO: once we have DATA: !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
     real :: v3
     data v3/0./
-    !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
     real :: v4
     common /blk/ v4
+    save /blk/
     block
-      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
       real, save :: v5
-      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
+    !ERROR: A PURE subprogram may not have a variable with the SAVE attribute
       real :: v6 = 0.
-      !ERROR: A PURE subprogram may not have local variables with the SAVE attribute
     end block
   end subroutine
   pure subroutine s06 ! C1589
-    !ERROR: A PURE subprogram may not have local variables with the VOLATILE attribute
+    !ERROR: A PURE subprogram may not have a variable with the VOLATILE attribute
     real, volatile :: v1
     block
-      !ERROR: A PURE subprogram may not have local variables with the VOLATILE attribute
+    !ERROR: A PURE subprogram may not have a variable with the VOLATILE attribute
       real, volatile :: v2
     end block
   end subroutine
+  !ERROR: A dummy procedure of a PURE subprogram must be PURE
   pure subroutine s07(p) ! C1590
-    !ERROR: A dummy procedure of a PURE subprogram must be PURE
     procedure(impure) :: p
   end subroutine
   ! C1591 is tested in call11.f90.
@@ -144,9 +144,9 @@ module m
   end function
   pure subroutine s09 ! C1593
     real :: x
-    !ERROR: A VOLATILE variable may not appear in a PURE subprogram
+    !ERROR: A VOLATILE variable may not be referenced in a PURE subprogram
     x = volatile
-    !ERROR: A VOLATILE variable may not appear in a PURE subprogram
+    !ERROR: A VOLATILE variable may not be referenced in a PURE subprogram
     x = volptr
   end subroutine
   ! C1594 is tested in call12.f90.

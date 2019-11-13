@@ -107,6 +107,25 @@ void CheckHelper::Check(const Symbol &symbol) {
     return;  // only care about checking VOLATILE on associated symbols
   }
   bool inPure{innermostSymbol_ && IsPureProcedure(*innermostSymbol_)};
+  if (inPure) {
+    if (IsSaved(symbol)) {
+      messages_.Say(
+          "A PURE subprogram may not have a variable with the SAVE attribute"_err_en_US);
+    }
+    if (symbol.attrs().test(Attr::VOLATILE)) {
+      messages_.Say(
+          "A PURE subprogram may not have a variable with the VOLATILE attribute"_err_en_US);
+    }
+    if (IsProcedure(symbol) && !IsPureProcedure(symbol)) {
+      if (IsDummy(symbol)) {
+        messages_.Say(
+            "A dummy procedure of a PURE subprogram must be PURE"_err_en_US);
+      } else if (symbol.has<SubprogramDetails>()) {
+        messages_.Say(
+            "An internal subprogram of a PURE subprogram must also be PURE"_err_en_US);
+      }
+    }
+  }
   bool inFunction{innermostSymbol_ && IsFunction(*innermostSymbol_)};
   if (type) {
     bool canHaveAssumedParameter{IsNamedConstant(symbol) ||
@@ -320,8 +339,8 @@ void CheckHelper::CheckVolatile(const Symbol &symbol, bool isAssociated,
 
 void CheckHelper::Check(const Scope &scope) {
   scope_ = &scope;
-  if (scope.symbol()) {
-    innermostSymbol_ = scope.symbol();
+  if (const Symbol * scopeSymbol{scope.symbol()}) {
+    innermostSymbol_ = scopeSymbol;
   }
   for (const auto &pair : scope) {
     Check(*pair.second);

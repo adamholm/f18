@@ -137,7 +137,7 @@ std::optional<parser::MessageFixedText> WhyNotModifiable(
     const Symbol &, const Scope &);
 std::unique_ptr<parser::Message> WhyNotModifiable(SourceName, const SomeExpr &,
     const Scope &, bool vectorSubscriptIsOk = false);
-bool IsExternalInPureContext(const Symbol &symbol, const Scope &scope);
+const Symbol *IsExternalInPureContext(const Symbol &symbol, const Scope &scope);
 bool HasCoarray(const parser::Expr &expression);
 
 // Analysis of image control statements
