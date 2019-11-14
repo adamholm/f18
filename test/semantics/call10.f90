@@ -72,7 +72,7 @@ module m
     class(t), allocatable :: f07
   end function
   pure function f08() ! C1585
-    !ERROR: Result of PURE function may not have polymorphic ALLOCATABLE ultimate component 'a'
+    !ERROR: Result of PURE function may not have polymorphic ALLOCATABLE ultimate component '%a'
     type(polyAlloc) :: f08
   end function
 
@@ -138,29 +138,24 @@ module m
     impure subroutine impure2
     end subroutine
   end subroutine
-  function volptr
-    real, pointer, volatile :: volptr
-    volptr => volatile
-  end function
   pure subroutine s09 ! C1593
     real :: x
-    !ERROR: A VOLATILE variable may not be referenced in a PURE subprogram
+    !ERROR: VOLATILE variable 'volatile' may not be referenced in PURE subprogram 's09'
     x = volatile
-    !ERROR: A VOLATILE variable may not be referenced in a PURE subprogram
-    x = volptr
   end subroutine
   ! C1594 is tested in call12.f90.
   pure subroutine s10 ! C1595
     integer :: n
-    !ERROR: Any procedure referenced in a PURE subprogram must also be PURE
+    !ERROR: Procedure referenced in PURE subprogram 's10' must be PURE too
     n = notpure(1)
   end subroutine
   pure subroutine s11(to) ! C1596
-    type(polyAlloc) :: auto, to
-    !ERROR: Deallocation of a polymorphic object is not permitted in a PURE subprogram
+    ! Implicit deallocation at the end of the subroutine
+    !ERROR: Deallocation of polymorphic object 'auto%a' is not permitted in a PURE subprogram
+    type(polyAlloc) :: auto
+    type(polyAlloc), intent(in out) :: to
+    !ERROR: Deallocation of polymorphic object 'to%a' is not permitted in a PURE subprogram
     to = auto
-    ! Implicit deallocation at the end of the subroutine:
-    !ERROR: Deallocation of a polymorphic object is not permitted in a PURE subprogram
   end subroutine
   pure subroutine s12
     character(20) :: buff

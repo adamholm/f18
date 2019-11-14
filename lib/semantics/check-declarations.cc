@@ -125,6 +125,21 @@ void CheckHelper::Check(const Symbol &symbol) {
             "An internal subprogram of a PURE subprogram must also be PURE"_err_en_US);
       }
     }
+    if (!IsDummy(symbol) && !IsFunctionResult(symbol)) {
+      if (IsPolymorphicAllocatable(symbol)) {
+        evaluate::SayWithDeclaration(messages_, &symbol,
+            "Deallocation of polymorphic object '%s' is not permitted in a PURE subprogram"_err_en_US,
+            symbol.name());
+      } else if (derived) {
+        UltimateComponentIterator ultimates{*derived};
+        if (auto bad{std::find_if(ultimates.begin(), ultimates.end(),
+                IsPolymorphicAllocatable)}) {
+          evaluate::SayWithDeclaration(messages_, &*bad,
+              "Deallocation of polymorphic object '%s%s' is not permitted in a PURE subprogram"_err_en_US,
+              symbol.name(), bad.BuildResultDesignatorName());
+        }
+      }
+    }
   }
   bool inFunction{innermostSymbol_ && IsFunction(*innermostSymbol_)};
   if (type) {
@@ -149,14 +164,12 @@ void CheckHelper::Check(const Symbol &symbol) {
             "Result of PURE function may not be both polymorphic and ALLOCATABLE"_err_en_US);
       }
       if (derived) {
-        if (const Symbol *
-            bad{FindUltimateComponent(*derived, [](const Symbol &x) {
-              const DeclTypeSpec *xType{x.GetType()};
-              return xType && xType->IsPolymorphic() && IsAllocatable(x);
-            })}) {
-          evaluate::SayWithDeclaration(messages_, bad,
+        UltimateComponentIterator ultimates{*derived};
+        if (auto bad{std::find_if(ultimates.begin(), ultimates.end(),
+                IsPolymorphicAllocatable)}) {
+          evaluate::SayWithDeclaration(messages_, &*bad,
               "Result of PURE function may not have polymorphic ALLOCATABLE ultimate component '%s'"_err_en_US,
-              bad->name());
+              bad.BuildResultDesignatorName());
         }
       }
     }

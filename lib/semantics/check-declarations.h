@@ -18,6 +18,7 @@
 #define FORTRAN_SEMANTICS_CHECK_DECLARATIONS_H_
 namespace Fortran::semantics {
 class SemanticsContext;
+class Symbol;
 void CheckDeclarations(SemanticsContext &);
 }
 #endif

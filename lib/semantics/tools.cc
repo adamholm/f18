@@ -211,7 +211,7 @@ bool IsProcedure(const Symbol &symbol) {
           [](const GenericDetails &) { return true; },
           [](const ProcBindingDetails &) { return true; },
           [](const UseDetails &x) { return IsProcedure(x.symbol()); },
-          // TODO: FinalProcDetails
+          // TODO: FinalProcDetails?
           [](const auto &) { return false; },
       },
       symbol.details());
@@ -719,6 +719,17 @@ bool HasCoarray(const parser::Expr &expression) {
   return false;
 }
 
+bool IsPolymorphicAllocatable(const Symbol &symbol) {
+  if (IsAllocatable(symbol)) {
+    if (const auto *details{symbol.detailsIf<ObjectEntityDetails>()}) {
+      if (const DeclTypeSpec * type{details->type()}) {
+        return type->IsPolymorphic();
+      }
+    }
+  }
+  return false;
+}
+
 static const DeclTypeSpec &InstantiateIntrinsicType(Scope &scope,
     const DeclTypeSpec &spec, SemanticsContext &semanticsContext) {
   const IntrinsicTypeSpec *intrinsic{spec.AsIntrinsic()};
@@ -1126,15 +1137,13 @@ template class ComponentIterator<ComponentKind::Scope>;
 UltimateComponentIterator::const_iterator FindCoarrayUltimateComponent(
     const DerivedTypeSpec &derived) {
   UltimateComponentIterator ultimates{derived};
-  return std::find_if(ultimates.begin(), ultimates.end(),
-      [](const Symbol &component) { return component.Corank() > 0; });
+  return std::find_if(ultimates.begin(), ultimates.end(), IsCoarray);
 }
 
 UltimateComponentIterator::const_iterator FindPointerUltimateComponent(
     const DerivedTypeSpec &derived) {
   UltimateComponentIterator ultimates{derived};
-  return std::find_if(ultimates.begin(), ultimates.end(),
-      [](const Symbol &component) { return IsPointer(component); });
+  return std::find_if(ultimates.begin(), ultimates.end(), IsPointer);
 }
 
 PotentialComponentIterator::const_iterator FindEventOrLockPotentialComponent(
